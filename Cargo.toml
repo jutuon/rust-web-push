@@ -29,7 +29,7 @@ serde_derive = "1.0"
 jwt-simple = { version = "0.12.11", default-features = false, features = ["pure-rust"] }
 ece = "2.2"
 pem = "3.0.4"
-sec1_decode = "0.1.0"
+sec1 = "0.7"
 chrono = "0.4"
 log = "0.4"
 async-trait = "0.1"
