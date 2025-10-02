@@ -4,6 +4,7 @@ use ct_codecs::Base64UrlSafeNoPadding;
 use http::uri::Uri;
 use jwt_simple::prelude::*;
 use serde_json::Value;
+use sec1::EcPrivateKey;
 
 use crate::{
     error::WebPushError,
@@ -121,9 +122,9 @@ impl<'a> VapidSignatureBuilder<'a> {
 
         Ok(Self::from_ec(
             ES256KeyPair::from_bytes(
-                &sec1_decode::parse_der(&der_key)
-                    .map_err(|_| WebPushError::InvalidCryptoKeys)?
-                    .key,
+            EcPrivateKey::try_from(der_key.as_slice())
+                .map_err(|_| WebPushError::InvalidCryptoKeys)?
+                .private_key
             )
             .map_err(|_| WebPushError::InvalidCryptoKeys)?,
             subscription_info,
@@ -139,9 +140,9 @@ impl<'a> VapidSignatureBuilder<'a> {
         Ok(PartialVapidSignatureBuilder {
             key: VapidKey::new(
                 ES256KeyPair::from_bytes(
-                    &sec1_decode::parse_der(&der_key)
-                        .map_err(|_| WebPushError::InvalidCryptoKeys)?
-                        .key,
+                EcPrivateKey::try_from(der_key.as_slice())
+                    .map_err(|_| WebPushError::InvalidCryptoKeys)?
+                    .private_key
                 )
                 .map_err(|_| WebPushError::InvalidCryptoKeys)?,
             ),
@@ -227,18 +228,24 @@ impl<'a> VapidSignatureBuilder<'a> {
         //Parse many PEM in the assumption of extra unneeded sections.
         let parsed = pem::parse_many(&buffer).map_err(|_| WebPushError::InvalidCryptoKeys)?;
 
-        let found_pkcs8 = parsed.iter().any(|pem| pem.tag() == "PRIVATE KEY");
-        let found_sec1 = parsed.iter().any(|pem| pem.tag() == "EC PRIVATE KEY");
-
-        //Handle each kind of PEM file differently, as EC keys can be in SEC1 or PKCS8 format.
-        if found_sec1 {
-            let key = sec1_decode::parse_pem(buffer.as_bytes()).map_err(|_| WebPushError::InvalidCryptoKeys)?;
-            Ok(ES256KeyPair::from_bytes(&key.key).map_err(|_| WebPushError::InvalidCryptoKeys)?)
-        } else if found_pkcs8 {
-            Ok(ES256KeyPair::from_pem(&buffer).map_err(|_| WebPushError::InvalidCryptoKeys)?)
-        } else {
-            Err(WebPushError::MissingCryptoKeys)
+        for p in parsed {
+            match p.tag() {
+                "EC PRIVATE KEY" => {
+                    // SEC1
+                    let private_key = EcPrivateKey::try_from(p.contents())
+                        .map_err(|_| WebPushError::InvalidCryptoKeys)?
+                        .private_key;
+                    return ES256KeyPair::from_bytes(private_key).map_err(|_| WebPushError::InvalidCryptoKeys)
+                }
+                "PRIVATE KEY" => {
+                    // PKCS8
+                    return ES256KeyPair::from_pem(&buffer).map_err(|_| WebPushError::InvalidCryptoKeys)
+                }
+                _ => (),
+            }
         }
+
+        Err(WebPushError::MissingCryptoKeys)
     }
 }
 
