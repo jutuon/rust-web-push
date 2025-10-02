@@ -81,7 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
         builder.set_vapid_signature(signature);
     };
 
-    let client = IsahcWebPushClient::new()?;
+    let client = HyperWebPushClient::new();
 
     let result = client.send(builder.build()?).await;
 

@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
     let p256dh = "key_from_browser_as_base64";
     let auth = "auth_from_browser_as_base64";
 
-    //You would likely get this by deserializing a browser `pushSubscription` object via serde.  
+    //You would likely get this by deserializing a browser `pushSubscription` object via serde.
     let subscription_info = SubscriptionInfo::new(
         endpoint,
         p256dh,
@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
     builder.set_payload(ContentEncoding::Aes128Gcm, content);
     builder.set_vapid_signature(sig_builder);
 
-    let client = IsahcWebPushClient::new()?;
+    let client = HyperWebPushClient::new();
 
     //Finally, send the notification!
     client.send(builder.build()?).await?;
@@ -107,9 +107,8 @@ Overview
 Currently, the crate implements
 [RFC8188](https://datatracker.ietf.org/doc/html/rfc8188) content encryption for notification payloads. This is done by
 delegating encryption to mozilla's [ece crate](https://crates.io/crates/ece). Our security is thus tied
-to [theirs](https://github.com/mozilla/rust-ece/issues/18). The default client is built
-on [isahc](https://crates.io/crates/isahc), but can be swapped out with a hyper based client using the
-`hyper-client` feature. Custom clients can be made using the `request_builder` module.
+to [theirs](https://github.com/mozilla/rust-ece/issues/18).
+Hyper HTTP client can be replaced by creating a custom client using the `request_builder` module.
 
 Library tested with Google's and Mozilla's push notification services. Also verified to work on Edge.
 

@@ -33,11 +33,11 @@
 //! builder.set_payload(ContentEncoding::Aes128Gcm, content);
 //! builder.set_vapid_signature(sig_builder);
 //!
-//! # #[cfg(feature = "isahc-client")]
-//! let client = IsahcWebPushClient::new()?;
+//! # #[cfg(feature = "hyper-client")]
+//! let client = HyperWebPushClient::new();
 //!
 //! // Finally, send the notification!
-//! # #[cfg(feature = "isahc-client")]
+//! # #[cfg(feature = "hyper-client")]
 //! client.send(builder.build()?).await?;
 //! # Ok(())
 //! # }
@@ -50,8 +50,6 @@ extern crate serde_derive;
 
 #[cfg(feature = "hyper-client")]
 pub use crate::clients::hyper_client::HyperWebPushClient;
-#[cfg(feature = "isahc-client")]
-pub use crate::clients::isahc_client::IsahcWebPushClient;
 pub use crate::{
     clients::{request_builder, WebPushClient},
     error::WebPushError,

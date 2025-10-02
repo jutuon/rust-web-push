@@ -12,9 +12,6 @@ pub mod request_builder;
 #[cfg(feature = "hyper-client")]
 pub mod hyper_client;
 
-#[cfg(feature = "isahc-client")]
-pub mod isahc_client;
-
 const MAX_RESPONSE_SIZE: usize = 64 * 1024;
 
 /// An async client for sending the notification payload.

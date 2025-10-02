@@ -100,13 +100,6 @@ impl From<hyper::Error> for WebPushError {
     }
 }
 
-#[cfg(feature = "isahc-client")]
-impl From<isahc::Error> for WebPushError {
-    fn from(_: isahc::Error) -> Self {
-        Self::Unspecified
-    }
-}
-
 impl From<IoError> for WebPushError {
     fn from(err: IoError) -> WebPushError {
         WebPushError::Io(err)

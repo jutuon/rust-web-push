@@ -22,12 +22,8 @@ jobs:
       - run: cargo build --manifest-path examples/simple-send/Cargo.toml
       - run: cargo test --no-default-features
       - run: cargo doc --no-default-features
-      - run: cargo test --no-default-features --features isahc-client
-      - run: cargo doc --no-default-features --features isahc-client
       - run: cargo test --no-default-features --features hyper-client
       - run: cargo doc --no-default-features --features hyper-client
-      - run: cargo test --no-default-features --features isahc-client,hyper-client
-      - run: cargo doc --no-default-features --features isahc-client,hyper-client
   windows:
     runs-on: windows-latest
     steps:
