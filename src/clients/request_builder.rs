@@ -31,7 +31,7 @@ use crate::{
 ///
 ///  // Build the request for hyper
 ///  # #[cfg(feature = "hyper-client")]
-///  let request = build_request::<hyper::Body>(builder.build().unwrap());
+///  let request = build_request::<http_body_util::Full<hyper::body::Bytes>>(builder.build().unwrap());
 ///  // Send using a http client
 /// ```
 pub fn build_request<T>(message: WebPushMessage) -> Request<T>
@@ -123,7 +123,7 @@ mod tests {
         builder.set_urgency(Urgency::VeryLow);
         builder.set_topic("some-topic".into());
 
-        let request = build_request::<hyper::Body>(builder.build().unwrap());
+        let request = build_request::<http_body_util::Full<hyper::body::Bytes>>(builder.build().unwrap());
         let ttl = request.headers().get("TTL").unwrap().to_str().unwrap();
         let urgency = request.headers().get("Urgency").unwrap().to_str().unwrap();
         let topic = request.headers().get("Topic").unwrap().to_str().unwrap();
@@ -152,7 +152,7 @@ mod tests {
 
         builder.set_payload(ContentEncoding::Aes128Gcm, "test".as_bytes());
 
-        let request = build_request::<hyper::Body>(builder.build().unwrap());
+        let request = build_request::<http_body_util::Full<hyper::body::Bytes>>(builder.build().unwrap());
 
         let encoding = request.headers().get("Content-Encoding").unwrap().to_str().unwrap();
 
