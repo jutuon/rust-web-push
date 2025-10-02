@@ -4,8 +4,13 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 
+[features]
+default = ["hyper-client"]
+hyper-client = ["web-push/hyper-client"]
+hyper-rustls-client = ["web-push/hyper-rustls-client"]
+
 [dependencies]
 argparse = "0.2"
 serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-web-push = { path = "../..", features = ["hyper-client"] }
+web-push = { path = "../..", default-features = false }

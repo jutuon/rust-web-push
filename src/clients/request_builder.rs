@@ -104,7 +104,7 @@ mod tests {
         Urgency,
     };
 
-    #[cfg(feature = "hyper-client")]
+    #[cfg(any(feature = "hyper-client", feature = "hyper-rustls-client"))]
     #[test]
     fn builds_a_correct_request_with_empty_payload() {
         //This *was* a real token
@@ -135,7 +135,7 @@ mod tests {
         assert_eq!(expected_uri.host(), request.uri().host());
     }
 
-    #[cfg(feature = "hyper-client")]
+    #[cfg(any(feature = "hyper-client", feature = "hyper-rustls-client"))]
     #[test]
     fn builds_a_correct_request_with_payload() {
         //This *was* a real token

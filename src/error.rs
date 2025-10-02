@@ -93,14 +93,14 @@ impl From<InvalidUri> for WebPushError {
     }
 }
 
-#[cfg(feature = "hyper-client")]
+#[cfg(any(feature = "hyper-client", feature = "hyper-rustls-client"))]
 impl From<hyper::Error> for WebPushError {
     fn from(_: hyper::Error) -> Self {
         Self::Unspecified
     }
 }
 
-#[cfg(feature = "hyper-client")]
+#[cfg(any(feature = "hyper-client", feature = "hyper-rustls-client"))]
 impl From<hyper_util::client::legacy::Error> for WebPushError {
     fn from(_: hyper_util::client::legacy::Error) -> Self {
         Self::Unspecified

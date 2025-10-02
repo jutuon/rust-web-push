@@ -3,7 +3,12 @@ use http::header::RETRY_AFTER;
 use http_body_util::{BodyExt, Full};
 use hyper::{body::Bytes, Request};
 use hyper_util::{client::legacy::{connect::HttpConnector, Client}, rt::TokioExecutor};
+
+#[cfg(feature = "hyper-client")]
 use hyper_tls::HttpsConnector;
+
+#[cfg(feature = "hyper-rustls-client")]
+use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 
 use crate::{
     clients::{request_builder, WebPushClient, MAX_RESPONSE_SIZE},
@@ -38,9 +43,18 @@ impl From<Client<HttpsConnector<HttpConnector>, Full<Bytes>>> for HyperWebPushCl
 impl HyperWebPushClient {
     /// Creates a new client.
     pub fn new() -> Self {
+        #[cfg(feature = "hyper-client")]
+        let https = HttpsConnector::new();
+
+        #[cfg(feature = "hyper-rustls-client")]
+        let https = HttpsConnectorBuilder::new()
+            .with_platform_verifier()
+            .https_only()
+            .enable_http1()
+            .build();
+
         Self {
-            client: Client::builder(TokioExecutor::new())
-                .build(HttpsConnector::new())
+            client: Client::builder(TokioExecutor::new()).build(https)
         }
     }
 }
