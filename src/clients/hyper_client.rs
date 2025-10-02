@@ -1,6 +1,8 @@
 use async_trait::async_trait;
 use http::header::RETRY_AFTER;
-use hyper::{body::HttpBody, client::HttpConnector, Body, Client, Request as HttpRequest};
+use http_body_util::{BodyExt, Full};
+use hyper::{body::Bytes, Request};
+use hyper_util::{client::legacy::{connect::HttpConnector, Client}, rt::TokioExecutor};
 use hyper_tls::HttpsConnector;
 
 use crate::{
@@ -17,7 +19,7 @@ use crate::{
 /// This client is [`hyper`](https://crates.io/crates/hyper) based, and will only work in Tokio contexts.
 #[derive(Clone)]
 pub struct HyperWebPushClient {
-    client: Client<HttpsConnector<HttpConnector>>,
+    client: Client<HttpsConnector<HttpConnector>, Full<Bytes>>,
 }
 
 impl Default for HyperWebPushClient {
@@ -26,9 +28,9 @@ impl Default for HyperWebPushClient {
     }
 }
 
-impl From<Client<HttpsConnector<HttpConnector>>> for HyperWebPushClient {
+impl From<Client<HttpsConnector<HttpConnector>, Full<Bytes>>> for HyperWebPushClient {
     /// Creates a new client from a custom hyper HTTP client.
-    fn from(client: Client<HttpsConnector<HttpConnector>>) -> Self {
+    fn from(client: Client<HttpsConnector<HttpConnector>, Full<Bytes>>) -> Self {
         Self { client }
     }
 }
@@ -37,7 +39,8 @@ impl HyperWebPushClient {
     /// Creates a new client.
     pub fn new() -> Self {
         Self {
-            client: Client::builder().build(HttpsConnector::new()),
+            client: Client::builder(TokioExecutor::new())
+                .build(HttpsConnector::new())
         }
     }
 }
@@ -48,13 +51,11 @@ impl WebPushClient for HyperWebPushClient {
     async fn send(&self, message: WebPushMessage) -> Result<(), WebPushError> {
         trace!("Message: {:?}", message);
 
-        let request: HttpRequest<Body> = request_builder::build_request(message);
+        let request: Request<Full<Bytes>> = request_builder::build_request(message);
 
         debug!("Request: {:?}", request);
 
-        let requesting = self.client.request(request);
-
-        let response = requesting.await?;
+        let response = self.client.request(request).await?;
 
         trace!("Response: {:?}", response);
 
@@ -69,10 +70,12 @@ impl WebPushClient for HyperWebPushClient {
 
         let mut chunks = response.into_body();
         let mut body = Vec::new();
-        while let Some(chunk) = chunks.data().await {
-            body.extend(&chunk?);
-            if body.len() > MAX_RESPONSE_SIZE {
-                return Err(WebPushError::ResponseTooLarge);
+        while let Some(chunk) = chunks.frame().await {
+            if let Some(data) = chunk?.data_ref() {
+                body.extend_from_slice(data);
+                if body.len() > MAX_RESPONSE_SIZE {
+                    return Err(WebPushError::ResponseTooLarge);
+                }
             }
         }
         trace!("Body: {:?}", body);

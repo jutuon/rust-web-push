@@ -100,6 +100,13 @@ impl From<hyper::Error> for WebPushError {
     }
 }
 
+#[cfg(feature = "hyper-client")]
+impl From<hyper_util::client::legacy::Error> for WebPushError {
+    fn from(_: hyper_util::client::legacy::Error) -> Self {
+        Self::Unspecified
+    }
+}
+
 impl From<IoError> for WebPushError {
     fn from(err: IoError) -> WebPushError {
         WebPushError::Io(err)
