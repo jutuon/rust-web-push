@@ -9,7 +9,7 @@ use crate::{WebPushError, WebPushMessage};
 
 pub mod request_builder;
 
-#[cfg(feature = "hyper-client")]
+#[cfg(any(feature = "hyper-client", feature = "hyper-rustls-client"))]
 pub mod hyper_client;
 
 const MAX_RESPONSE_SIZE: usize = 64 * 1024;

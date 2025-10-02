@@ -16,12 +16,14 @@ edition = "2021"
 [features]
 default = ["hyper-client"]
 hyper-client = ["hyper", "hyper-tls", "hyper-util", "http-body-util"]
+hyper-rustls-client = ["hyper", "hyper-rustls", "hyper-util", "http-body-util"]
 
 [dependencies]
 hyper = { version = "1.7", optional = true }
 hyper-util = { version = "0.1", features = ["client", "client-legacy", "http1"], optional = true }
 http-body-util = { version = "0.1", optional = true }
 hyper-tls = { version = "0.6", optional = true }
+hyper-rustls = { version = "0.27", default-features = false, features = ["http1", "tls12", "logging", "ring", "rustls-platform-verifier"], optional = true }
 http = "1.3"
 serde = "1.0"
 serde_json = "1.0"
