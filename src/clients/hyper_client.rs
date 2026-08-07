@@ -56,6 +56,7 @@ impl HyperWebPushClient {
             .with_platform_verifier()
             .https_only()
             .enable_http1()
+            .enable_http2()
             .build();
 
         Self {
