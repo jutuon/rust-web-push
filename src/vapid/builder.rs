@@ -1,8 +1,8 @@
-use std::{collections::BTreeMap, io::Read};
+use std::io::Read;
 
 use base64ct::{Base64UrlUnpadded, Encoding};
 use http::uri::Uri;
-use jwt_simple::prelude::*;
+use p256::SecretKey;
 use serde_json::Value;
 
 use crate::{
@@ -120,12 +120,7 @@ impl<'a> VapidSignatureBuilder<'a> {
         pk_der.read_to_end(&mut der_key)?;
 
         Ok(Self::from_ec(
-            ES256KeyPair::from_bytes(
-                &p256::SecretKey::from_sec1_der(der_key.as_slice())
-                    .map_err(|_| WebPushError::InvalidCryptoKeys)?
-                    .to_bytes(),
-            )
-            .map_err(|_| WebPushError::InvalidCryptoKeys)?,
+            SecretKey::from_sec1_der(&der_key).map_err(|_| WebPushError::InvalidCryptoKeys)?,
             subscription_info,
         ))
     }
@@ -137,14 +132,7 @@ impl<'a> VapidSignatureBuilder<'a> {
         pk_der.read_to_end(&mut der_key)?;
 
         Ok(PartialVapidSignatureBuilder {
-            key: VapidKey::new(
-                ES256KeyPair::from_bytes(
-                    &p256::SecretKey::from_sec1_der(der_key.as_slice())
-                        .map_err(|_| WebPushError::InvalidCryptoKeys)?
-                        .to_bytes(),
-                )
-                .map_err(|_| WebPushError::InvalidCryptoKeys)?,
-            ),
+            key: VapidKey::new(SecretKey::from_sec1_der(&der_key).map_err(|_| WebPushError::InvalidCryptoKeys)?),
         })
     }
 
@@ -166,7 +154,7 @@ impl<'a> VapidSignatureBuilder<'a> {
         encoded: &str,
         subscription_info: &'a SubscriptionInfo,
     ) -> Result<VapidSignatureBuilder<'a>, WebPushError> {
-        let pr_key = ES256KeyPair::from_bytes(
+        let pr_key = SecretKey::from_slice(
             &Base64UrlUnpadded::decode_vec(encoded).map_err(|_| WebPushError::InvalidCryptoKeys)?,
         )
         .map_err(|_| WebPushError::InvalidCryptoKeys)?;
@@ -180,7 +168,7 @@ impl<'a> VapidSignatureBuilder<'a> {
     /// Base64 encoding must use URL-safe alphabet without padding.
     ///
     pub fn from_base64_no_sub(encoded: &str) -> Result<PartialVapidSignatureBuilder, WebPushError> {
-        let pr_key = ES256KeyPair::from_bytes(
+        let pr_key = SecretKey::from_slice(
             &Base64UrlUnpadded::decode_vec(encoded).map_err(|_| WebPushError::InvalidCryptoKeys)?,
         )
         .map_err(|_| WebPushError::InvalidCryptoKeys)?;
@@ -211,23 +199,21 @@ impl<'a> VapidSignatureBuilder<'a> {
         Ok(signature)
     }
 
-    fn from_ec(ec_key: ES256KeyPair, subscription_info: &'a SubscriptionInfo) -> VapidSignatureBuilder<'a> {
+    fn from_ec(private_key: SecretKey, subscription_info: &'a SubscriptionInfo) -> VapidSignatureBuilder<'a> {
         VapidSignatureBuilder {
-            claims: jwt_simple::prelude::Claims::with_custom_claims(BTreeMap::new(), Duration::from_hours(12)),
-            key: VapidKey::new(ec_key),
+            claims: Claims::with_default_expiry(),
+            key: VapidKey::new(private_key),
             subscription_info,
         }
     }
 
     /// Reads the pem file as either format sec1 or pkcs8, then returns the decoded private key.
-    pub(crate) fn read_pem<R: Read>(mut input: R) -> Result<ES256KeyPair, WebPushError> {
+    pub(crate) fn read_pem<R: Read>(mut input: R) -> Result<SecretKey, WebPushError> {
         let mut buffer = String::new();
         input.read_to_string(&mut buffer)?;
 
         // Parse the PEM as either a SEC1 or PKCS8 private key.
-        let key = p256::SecretKey::from_pem(&buffer).map_err(|_| WebPushError::InvalidCryptoKeys)?;
-
-        ES256KeyPair::from_bytes(&key.to_bytes()).map_err(|_| WebPushError::InvalidCryptoKeys)
+        SecretKey::from_pem(&buffer).map_err(|_| WebPushError::InvalidCryptoKeys)
     }
 }
 
@@ -265,7 +251,7 @@ impl PartialVapidSignatureBuilder {
     pub fn add_sub_info(self, subscription_info: &SubscriptionInfo) -> VapidSignatureBuilder<'_> {
         VapidSignatureBuilder {
             key: self.key,
-            claims: jwt_simple::prelude::Claims::with_custom_claims(BTreeMap::new(), Duration::from_hours(12)),
+            claims: Claims::with_default_expiry(),
             subscription_info,
         }
     }

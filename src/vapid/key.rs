@@ -1,22 +1,34 @@
-use jwt_simple::prelude::*;
+use jsonwebtoken::EncodingKey;
+use p256::{ecdsa::SigningKey, pkcs8::EncodePrivateKey, SecretKey};
+
+use crate::error::WebPushError;
 
 /// The P256 curve key pair used for VAPID ECDHSA.
-pub struct VapidKey(pub ES256KeyPair);
-
-impl Clone for VapidKey {
-    fn clone(&self) -> Self {
-        VapidKey(ES256KeyPair::from_bytes(&self.0.to_bytes()).unwrap())
-    }
+#[derive(Clone)]
+pub struct VapidKey {
+    private_key: SecretKey,
 }
 
 impl VapidKey {
-    pub fn new(ec_key: ES256KeyPair) -> VapidKey {
-        VapidKey(ec_key)
+    pub fn new(private_key: SecretKey) -> VapidKey {
+        VapidKey { private_key }
     }
 
     /// Gets the uncompressed public key bytes derived from this private key.
     pub fn public_key(&self) -> Vec<u8> {
-        self.0.public_key().public_key().to_bytes_uncompressed()
+        SigningKey::from(&self.private_key)
+            .verifying_key()
+            .to_sec1_bytes()
+            .to_vec()
+    }
+
+    /// Builds a jsonwebtoken `EncodingKey` from the private key.
+    pub(crate) fn encoding_key(&self) -> Result<EncodingKey, WebPushError> {
+        let der = self
+            .private_key
+            .to_pkcs8_der()
+            .map_err(|_| WebPushError::InvalidCryptoKeys)?;
+        Ok(EncodingKey::from_ec_der(der.as_bytes()))
     }
 }
 
@@ -52,6 +64,6 @@ mod tests {
 
         let key2 = key.clone();
 
-        assert_eq!(key.0.to_bytes(), key2.0.to_bytes())
+        assert_eq!(key.private_key, key2.private_key)
     }
 }
