@@ -42,13 +42,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
 
     //Read signing material for payload.
     let file = File::open("private_key.pem").unwrap();
-    let mut sig_builder = VapidSignatureBuilder::from_pem(file, &subscription_info)?.build()?;
+    let mut sig_builder = VapidSignatureBuilder::from_pem(file, &subscription_info)?;
+    sig_builder.set_sub("mailto:test@example.com");
+    let signature = sig_builder.build()?;
 
     //Now add payload and encrypt.
     let mut builder = WebPushMessageBuilder::new(&subscription_info);
     let content = "Encrypted payload to be sent in the notification".as_bytes();
     builder.set_payload(ContentEncoding::Aes128Gcm, content);
-    builder.set_vapid_signature(sig_builder);
+    builder.set_vapid_signature(signature);
 
     let client = HyperWebPushClient::new();
 

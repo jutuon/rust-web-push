@@ -72,9 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
 
         let mut sig_builder = VapidSignatureBuilder::from_pem(file, &subscription_info).unwrap();
 
-        sig_builder.add_claim("sub", "mailto:test@example.com");
-        sig_builder.add_claim("foo", "bar");
-        sig_builder.add_claim("omg", 123);
+        sig_builder.set_sub("mailto:test@example.com");
 
         let signature = sig_builder.build().unwrap();
 

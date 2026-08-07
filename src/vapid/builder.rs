@@ -3,12 +3,11 @@ use std::io::Read;
 use base64ct::{Base64UrlUnpadded, Encoding};
 use http::uri::Uri;
 use p256::SecretKey;
-use serde_json::Value;
 
 use crate::{
     error::WebPushError,
     message::SubscriptionInfo,
-    vapid::{signer::Claims, VapidKey, VapidSignature, VapidSigner},
+    vapid::{VapidKey, VapidSignature, VapidSigner},
 };
 
 /// A VAPID signature builder for generating an optional signature to the
@@ -66,18 +65,15 @@ use crate::{
 ///
 /// let mut sig_builder = VapidSignatureBuilder::from_pem(file, &subscription_info).unwrap();
 ///
-/// //These fields are optional, and likely unneeded for most uses.
-/// sig_builder.add_claim("sub", "mailto:test@example.com");
-/// sig_builder.add_claim("foo", "bar");
-/// sig_builder.add_claim("omg", 123);
+/// sig_builder.set_sub("mailto:test@example.com");
 ///
 /// let signature = sig_builder.build().unwrap();
 /// # }
 /// ```
 pub struct VapidSignatureBuilder<'a> {
-    claims: Claims,
     key: VapidKey,
     subscription_info: &'a SubscriptionInfo,
+    sub: Option<String>,
 }
 
 impl<'a> VapidSignatureBuilder<'a> {
@@ -178,32 +174,26 @@ impl<'a> VapidSignatureBuilder<'a> {
         })
     }
 
-    /// Add a claim to the signature. Claims `aud` and `exp` are automatically
-    /// added to the signature. Add them manually to override the default
-    /// values.
-    ///
-    /// The function accepts any value that can be converted into a type JSON
-    /// supports.
-    pub fn add_claim<V>(&mut self, key: &'a str, val: V)
-    where
-        V: Into<Value>,
-    {
-        self.claims.custom.insert(key.to_string(), val.into());
+    /// Sets the optional `sub` claim which contains application server contact
+    /// information. It can be `mailto:` email address or a HTTPS URL.
+    /// Note that some push services require this.
+    pub fn set_sub(&mut self, sub: &str) {
+        self.sub = Some(sub.to_string());
     }
 
     /// Builds a signature to be used in [WebPushMessageBuilder](struct.WebPushMessageBuilder.html).
     pub fn build(self) -> Result<VapidSignature, WebPushError> {
         let endpoint: Uri = self.subscription_info.endpoint.parse()?;
-        let signature = VapidSigner::sign(self.key, &endpoint, self.claims)?;
+        let signature = VapidSigner::sign(self.key, &endpoint, self.sub.as_deref())?;
 
         Ok(signature)
     }
 
     fn from_ec(private_key: SecretKey, subscription_info: &'a SubscriptionInfo) -> VapidSignatureBuilder<'a> {
         VapidSignatureBuilder {
-            claims: Claims::with_default_expiry(),
             key: VapidKey::new(private_key),
             subscription_info,
+            sub: None,
         }
     }
 
@@ -251,8 +241,8 @@ impl PartialVapidSignatureBuilder {
     pub fn add_sub_info(self, subscription_info: &SubscriptionInfo) -> VapidSignatureBuilder<'_> {
         VapidSignatureBuilder {
             key: self.key,
-            claims: Claims::with_default_expiry(),
             subscription_info,
+            sub: None,
         }
     }
 
