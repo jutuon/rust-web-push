@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use ct_codecs::{Base64UrlSafeNoPadding, Decoder};
+use base64ct::{Base64UrlUnpadded, Encoding};
 use http::uri::Uri;
 
 use crate::{
@@ -187,9 +187,9 @@ impl<'a> WebPushMessageBuilder<'a> {
             .transpose()?;
 
         if let Some(payload) = self.payload {
-            let p256dh = Base64UrlSafeNoPadding::decode_to_vec(&self.subscription_info.keys.p256dh, None)
+            let p256dh = Base64UrlUnpadded::decode_vec(&self.subscription_info.keys.p256dh)
                 .map_err(|_| WebPushError::InvalidCryptoKeys)?;
-            let auth = Base64UrlSafeNoPadding::decode_to_vec(&self.subscription_info.keys.auth, None)
+            let auth = Base64UrlUnpadded::decode_vec(&self.subscription_info.keys.auth)
                 .map_err(|_| WebPushError::InvalidCryptoKeys)?;
 
             let http_ece = HttpEce::new(payload.encoding, &p256dh, &auth, self.vapid_signature);

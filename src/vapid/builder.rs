@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, io::Read};
 
-use ct_codecs::Base64UrlSafeNoPadding;
+use base64ct::{Base64UrlUnpadded, Encoding};
 use http::uri::Uri;
 use jwt_simple::prelude::*;
 use serde_json::Value;
@@ -167,7 +167,7 @@ impl<'a> VapidSignatureBuilder<'a> {
         subscription_info: &'a SubscriptionInfo,
     ) -> Result<VapidSignatureBuilder<'a>, WebPushError> {
         let pr_key = ES256KeyPair::from_bytes(
-            &Base64UrlSafeNoPadding::decode_to_vec(encoded, None).map_err(|_| WebPushError::InvalidCryptoKeys)?,
+            &Base64UrlUnpadded::decode_vec(encoded).map_err(|_| WebPushError::InvalidCryptoKeys)?,
         )
         .map_err(|_| WebPushError::InvalidCryptoKeys)?;
 
@@ -181,7 +181,7 @@ impl<'a> VapidSignatureBuilder<'a> {
     ///
     pub fn from_base64_no_sub(encoded: &str) -> Result<PartialVapidSignatureBuilder, WebPushError> {
         let pr_key = ES256KeyPair::from_bytes(
-            &Base64UrlSafeNoPadding::decode_to_vec(encoded, None).map_err(|_| WebPushError::InvalidCryptoKeys)?,
+            &Base64UrlUnpadded::decode_vec(encoded).map_err(|_| WebPushError::InvalidCryptoKeys)?,
         )
         .map_err(|_| WebPushError::InvalidCryptoKeys)?;
 
@@ -280,7 +280,7 @@ impl PartialVapidSignatureBuilder {
 
 #[cfg(test)]
 mod tests {
-    use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
+    use base64ct::{Base64UrlUnpadded, Encoding};
 
     use crate::{message::SubscriptionInfo, vapid::VapidSignatureBuilder};
 
@@ -308,7 +308,7 @@ mod tests {
 
         assert_eq!(
             "BMo1HqKF6skMZYykrte9duqYwBD08mDQKTunRkJdD3sTJ9E-yyN6sJlPWTpKNhp-y2KeS6oANHF-q3w37bClb7U",
-            Base64UrlSafeNoPadding::encode_to_string(&signature.auth_k).unwrap()
+            Base64UrlUnpadded::encode_string(&signature.auth_k)
         );
 
         assert!(!signature.auth_t.is_empty());
@@ -322,7 +322,7 @@ mod tests {
 
         assert_eq!(
             "BMo1HqKF6skMZYykrte9duqYwBD08mDQKTunRkJdD3sTJ9E-yyN6sJlPWTpKNhp-y2KeS6oANHF-q3w37bClb7U",
-            Base64UrlSafeNoPadding::encode_to_string(&signature.auth_k).unwrap()
+            Base64UrlUnpadded::encode_string(&signature.auth_k)
         );
 
         assert!(!signature.auth_t.is_empty());
@@ -336,7 +336,7 @@ mod tests {
 
         assert_eq!(
             "BMjQIp55pdbU8pfCBKyXcZjlmER_mXt5LqNrN1hrXbdBS5EnhIbMu3Au-RV53iIpztzNXkGI56BFB1udQ8Bq_H4",
-            Base64UrlSafeNoPadding::encode_to_string(&signature.auth_k).unwrap()
+            Base64UrlUnpadded::encode_string(&signature.auth_k)
         );
 
         assert!(!signature.auth_t.is_empty());
