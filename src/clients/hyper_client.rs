@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use http::header::RETRY_AFTER;
 use http_body_util::{BodyExt, Full};
 use hyper::{body::Bytes, Request};
@@ -12,7 +11,7 @@ use hyper_util::{
 };
 
 use crate::{
-    clients::{request_builder, WebPushClient, MAX_RESPONSE_SIZE},
+    clients::{request_builder, MAX_RESPONSE_SIZE},
     error::{RetryAfter, WebPushError},
     message::WebPushMessage,
 };
@@ -63,12 +62,9 @@ impl HyperWebPushClient {
             client: Client::builder(TokioExecutor::new()).build(https),
         }
     }
-}
 
-#[async_trait]
-impl WebPushClient for HyperWebPushClient {
     /// Sends a notification. Never times out.
-    async fn send(&self, message: WebPushMessage) -> Result<(), WebPushError> {
+    pub async fn send(&self, message: WebPushMessage) -> Result<(), WebPushError> {
         trace!("Message: {:?}", message);
 
         let request: Request<Full<Bytes>> = request_builder::build_request(message);

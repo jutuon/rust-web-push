@@ -51,7 +51,7 @@ extern crate serde_derive;
 #[cfg(any(feature = "hyper-client", feature = "hyper-rustls-client"))]
 pub use crate::clients::hyper_client::HyperWebPushClient;
 pub use crate::{
-    clients::{request_builder, WebPushClient},
+    clients::request_builder,
     error::WebPushError,
     http_ece::ContentEncoding,
     message::{SubscriptionInfo, SubscriptionKeys, Urgency, WebPushMessage, WebPushMessageBuilder, WebPushPayload},
