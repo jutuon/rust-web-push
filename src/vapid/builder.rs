@@ -3,7 +3,6 @@ use std::{collections::BTreeMap, io::Read};
 use ct_codecs::Base64UrlSafeNoPadding;
 use http::uri::Uri;
 use jwt_simple::prelude::*;
-use sec1::EcPrivateKey;
 use serde_json::Value;
 
 use crate::{
@@ -122,9 +121,9 @@ impl<'a> VapidSignatureBuilder<'a> {
 
         Ok(Self::from_ec(
             ES256KeyPair::from_bytes(
-                EcPrivateKey::try_from(der_key.as_slice())
+                &p256::SecretKey::from_sec1_der(der_key.as_slice())
                     .map_err(|_| WebPushError::InvalidCryptoKeys)?
-                    .private_key,
+                    .to_bytes(),
             )
             .map_err(|_| WebPushError::InvalidCryptoKeys)?,
             subscription_info,
@@ -140,9 +139,9 @@ impl<'a> VapidSignatureBuilder<'a> {
         Ok(PartialVapidSignatureBuilder {
             key: VapidKey::new(
                 ES256KeyPair::from_bytes(
-                    EcPrivateKey::try_from(der_key.as_slice())
+                    &p256::SecretKey::from_sec1_der(der_key.as_slice())
                         .map_err(|_| WebPushError::InvalidCryptoKeys)?
-                        .private_key,
+                        .to_bytes(),
                 )
                 .map_err(|_| WebPushError::InvalidCryptoKeys)?,
             ),
