@@ -36,8 +36,11 @@ impl VapidSigner {
     /// Create a signature with a given key. Sets the audience from the
     /// endpoint host and the expiry to twelve hours.
     pub fn sign(key: VapidKey, endpoint: &Uri, sub: Option<&str>) -> Result<VapidSignature, WebPushError> {
+        let scheme = endpoint.scheme_str().ok_or(WebPushError::InvalidClaims)?;
+        let host = endpoint.host().ok_or(WebPushError::InvalidClaims)?;
+
         let claims = Claims {
-            aud: format!("{}://{}", endpoint.scheme_str().unwrap(), endpoint.host().unwrap()),
+            aud: format!("{}://{}", scheme, host),
             exp: now() + 12 * 60 * 60,
             sub: sub.map(str::to_string),
         };
