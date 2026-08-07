@@ -45,7 +45,11 @@ impl HyperWebPushClient {
     /// Creates a new client.
     pub fn new() -> Self {
         #[cfg(feature = "hyper-client")]
-        let https = HttpsConnector::new();
+        let https = {
+            let mut https = HttpsConnector::new();
+            https.https_only(true);
+            https
+        };
 
         #[cfg(feature = "hyper-rustls-client")]
         let https = HttpsConnectorBuilder::new()
