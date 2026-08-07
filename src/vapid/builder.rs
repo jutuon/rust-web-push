@@ -225,27 +225,10 @@ impl<'a> VapidSignatureBuilder<'a> {
         let mut buffer = String::new();
         input.read_to_string(&mut buffer)?;
 
-        //Parse many PEM in the assumption of extra unneeded sections.
-        let parsed = pem::parse_many(&buffer).map_err(|_| WebPushError::InvalidCryptoKeys)?;
+        // Parse the PEM as either a SEC1 or PKCS8 private key.
+        let key = p256::SecretKey::from_pem(&buffer).map_err(|_| WebPushError::InvalidCryptoKeys)?;
 
-        for p in parsed {
-            match p.tag() {
-                "EC PRIVATE KEY" => {
-                    // SEC1
-                    let private_key = EcPrivateKey::try_from(p.contents())
-                        .map_err(|_| WebPushError::InvalidCryptoKeys)?
-                        .private_key;
-                    return ES256KeyPair::from_bytes(private_key).map_err(|_| WebPushError::InvalidCryptoKeys);
-                }
-                "PRIVATE KEY" => {
-                    // PKCS8
-                    return ES256KeyPair::from_pem(&buffer).map_err(|_| WebPushError::InvalidCryptoKeys);
-                }
-                _ => (),
-            }
-        }
-
-        Err(WebPushError::MissingCryptoKeys)
+        ES256KeyPair::from_bytes(&key.to_bytes()).map_err(|_| WebPushError::InvalidCryptoKeys)
     }
 }
 

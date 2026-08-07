@@ -60,8 +60,6 @@ pub enum WebPushError {
     InvalidTtl,
     /// The Topic value provided was invalid
     InvalidTopic,
-    /// The request was missing required crypto keys
-    MissingCryptoKeys,
     /// One or more of the crypto key elements are invalid.
     InvalidCryptoKeys,
     /// Corrupted response data
@@ -129,7 +127,6 @@ impl WebPushError {
             WebPushError::InvalidTtl => "invalid_ttl",
             WebPushError::InvalidTopic => "invalid_topic",
             WebPushError::InvalidResponse => "invalid_response",
-            WebPushError::MissingCryptoKeys => "missing_crypto_keys",
             WebPushError::InvalidCryptoKeys => "invalid_crypto_keys",
             WebPushError::Io(_) => "io_error",
             WebPushError::Other(_) => "other",
@@ -159,7 +156,6 @@ impl fmt::Display for WebPushError {
             WebPushError::InvalidTtl => write!(f, "invalid or missing ttl value"),
             WebPushError::InvalidTopic => write!(f, "invalid topic value"),
             WebPushError::InvalidResponse => write!(f, "could not parse response data"),
-            WebPushError::MissingCryptoKeys => write!(f, "request is missing cryptographic keys"),
             WebPushError::InvalidCryptoKeys => write!(f, "request has invalid cryptographic keys"),
             WebPushError::Other(info) => write!(f, "other: {}", info),
             WebPushError::InvalidClaims => write!(f, "at least one jwt claim was invalid"),
