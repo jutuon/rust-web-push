@@ -5,6 +5,20 @@ use ece::encrypt;
 
 use crate::{error::WebPushError, message::WebPushPayload, vapid::VapidSignature};
 
+mod aws_lc_rs;
+
+use aws_lc_rs::AwsLcRsCryptographer;
+
+static CRYPTOGRAPHER: AwsLcRsCryptographer = AwsLcRsCryptographer;
+
+/// Registers the aws-lc-rs backed `Cryptographer` with the `ece` crate.
+///
+/// This must be called before any `ece` cryptographic operation. It is safe to
+/// call multiple times; only the first call takes effect.
+fn init_cryptographer() {
+    let _ = ece::crypto::set_cryptographer(&CRYPTOGRAPHER);
+}
+
 /// Content encoding profiles.
 #[derive(Debug, PartialEq, Copy, Clone, Default)]
 pub enum ContentEncoding {
@@ -59,6 +73,8 @@ impl<'a> HttpEce<'a> {
         if content.len() > 3052 {
             return Err(WebPushError::PayloadTooLarge);
         }
+
+        init_cryptographer();
 
         //Add more encoding standards to this match as they are created.
         match self.encoding {
@@ -129,6 +145,7 @@ mod tests {
     use base64ct::{Base64UrlUnpadded, Encoding};
     use regex::Regex;
 
+    use super::init_cryptographer;
     use crate::{
         error::WebPushError,
         http_ece::{ContentEncoding, HttpEce},
@@ -152,6 +169,7 @@ mod tests {
     /// Tests that the content encryption is properly reversible while using aes128gcm.
     #[test]
     fn test_payload_encrypts_128() {
+        init_cryptographer();
         let (key, auth) = ece::generate_keypair_and_auth_secret().unwrap();
         let p_key = key.raw_components().unwrap();
         let p_key = p_key.public_key();
@@ -172,6 +190,7 @@ mod tests {
     /// Tests that the content encryption is properly reversible while using aesgcm.
     #[test]
     fn test_payload_encrypts() {
+        init_cryptographer();
         let (key, auth) = ece::generate_keypair_and_auth_secret().unwrap();
         let p_key = key.raw_components().unwrap();
         let p_key = p_key.public_key();
